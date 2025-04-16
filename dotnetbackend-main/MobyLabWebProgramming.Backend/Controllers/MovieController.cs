@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MobyLabWebProgramming.Core.DataTransferObjects;
+using MobyLabWebProgramming.Core.Requests;
+using MobyLabWebProgramming.Core.Responses;
 using MobyLabWebProgramming.Infrastructure.Services.Interfaces;
 
 namespace MobyLabWebProgramming.Backend.Controllers;
@@ -9,23 +11,23 @@ namespace MobyLabWebProgramming.Backend.Controllers;
 public class MovieController(IMovieService movieService) : ControllerBase
 {
     [HttpGet("all")]
-    public async Task<ActionResult<List<MovieDetailsDTO>>> GetAllMovies()
+    public async Task<ActionResult<PagedResponse<MovieDetailsDTO>>> GetAll([FromQuery] PageDTO request)
     {
-        var result = await movieService.GetAllMoviesAsync();
-        return Ok(result);
+        var response = await movieService.GetAllMoviesAsync(request.Page, request.PageSize);
+        return Ok(response);
     }
 
     [HttpGet("by-title")]
-    public async Task<ActionResult<List<MovieDetailsDTO>>> GetByTitle([FromQuery] string title)
+    public async Task<IActionResult> GetExactMovie([FromQuery] string title)
     {
-        var result = await movieService.GetMoviesByTitleAsync(title);
-        return Ok(result);
+        var movie = await movieService.GetMovieByTitleAsync(title);
+        return movie is not null ? Ok(movie) : NotFound();
     }
-
+    
     [HttpGet("by-genre")]
-    public async Task<ActionResult<List<MovieDetailsDTO>>> GetByGenre([FromQuery] string genre)
+    public async Task<ActionResult<PagedResponse<MovieDetailsDTO>>> GetByGenre([FromQuery] string genre, [FromQuery] PageDTO request)
     {
-        var result = await movieService.GetMoviesByGenreAsync(genre);
-        return Ok(result);
+        var response = await movieService.GetMoviesByGenreAsync(genre, request.Page, request.PageSize);
+        return Ok(response);
     }
 }

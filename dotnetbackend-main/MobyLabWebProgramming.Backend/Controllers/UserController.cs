@@ -93,4 +93,21 @@ public class UserController(IUserService userService) : AuthorizedController(use
             FromServiceResponse(await UserService.DeleteUser(id)) :
             ErrorMessageResult(currentUser.Error);
     }
+    
+    [Authorize]
+    [HttpPost("upgrade-to-premium")]
+    public async Task<ActionResult<RequestResponse>> UpgradeToPremium([FromQuery] string code)
+    {
+        var currentUser = await GetCurrentUser();
+
+        if (currentUser.Result == null)
+            return ErrorMessageResult(currentUser.Error);
+
+        if (code != "PREMIUM2025")
+            return BadRequest("Codul introdus este invalid!");
+        
+        return await UserService.UpgradeUserToPremium(currentUser.Result!.Id);
+
+    }
+
 }

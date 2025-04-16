@@ -212,4 +212,24 @@ public class UserService(
         return await repository.GetAsync(new UserSpec(email), cancellationToken);
     }
 
+    public async Task<RequestResponse> UpgradeUserToPremium(Guid userId)
+    {
+        var user = await repository.GetAsync<User>(userId);
+
+        if (user == null)
+            return RequestResponse<string>.FromError(
+                new ErrorMessage(
+                    HttpStatusCode.NotFound,
+                    "Utilizatorul nu a fost găsit.",
+                    ErrorCodes.EntityNotFound
+                )
+            );
+
+        user.Role = UserRoleEnum.Premium;
+
+        await repository.UpdateAsync(user);
+
+        return RequestResponse.FromError(null);
+    }
+    
 }

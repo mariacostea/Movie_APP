@@ -5,10 +5,12 @@ using MobyLabWebProgramming.Core.Configuration;
 using MobyLabWebProgramming.Core.DataTransferObjects;
 using MobyLabWebProgramming.Core.Entities;
 using MobyLabWebProgramming.Core.Errors;
+using MobyLabWebProgramming.Core.Responses;
 using MobyLabWebProgramming.Core.Specifications;
 using MobyLabWebProgramming.Infrastructure.Database;
 using MobyLabWebProgramming.Infrastructure.Repositories.Interfaces;
 using MobyLabWebProgramming.Infrastructure.Services.Interfaces;
+
 
 namespace MobyLabWebProgramming.Infrastructure.Services.Implementations;
 
@@ -69,23 +71,30 @@ public class MovieService : IMovieService
         return results.GetArrayLength() > 0 ? results[0].Clone() : null;
     }
 
-    public async Task<List<MovieDetailsDTO>> GetMoviesAsync()
+    public async Task<PagedResponse<MovieDetailsDTO>> GetAllMoviesAsync(int page, int pageSize)
     {
-        return await _movieRepo.ListAsync(new MovieProjectionSpec());
+        var spec = new MovieProjectionSpec(page, pageSize);
+        var countSpec = new MovieSpec();
+
+        var movies = await _movieRepo.ListAsync(spec);
+        var totalCount = await _movieRepo.GetCountAsync(countSpec);
+
+        return new PagedResponse<MovieDetailsDTO>(page, pageSize, totalCount, movies);
     }
 
-    public async Task<List<MovieDetailsDTO>> GetMoviesByTitleAsync(string title)
+    public async Task<MovieDetailsDTO?> GetMovieByTitleAsync(string title)
     {
-        return await _movieRepo.ListAsync(new MovieProjectionSpec(title));
+        var spec = new MovieProjectionSpec(title);
+        return await _movieRepo.GetAsync(spec);
     }
 
-    public async Task<List<MovieDetailsDTO>> GetMoviesByGenreAsync(string genre)
-    {
-        return await _movieRepo.ListAsync(new MovieProjectionSpec(genre));
-    }
-    public async Task<List<MovieDetailsDTO>> GetAllMoviesAsync()
-    {
-        return await _movieRepo.ListAsync(new MovieProjectionSpec());
-    }
 
+    public async Task<PagedResponse<MovieDetailsDTO>> GetMoviesByGenreAsync(string genre, int page, int pageSize)
+    {
+        var spec = new MovieProjectionSpec(genre: genre, page: page, pageSize: pageSize);
+        var movies = await _movieRepo.ListAsync(spec);
+        var total = await _movieRepo.GetCountAsync(new MovieSpec(genre, isGenre: true));
+
+        return new PagedResponse<MovieDetailsDTO>(page, pageSize, total, movies);
+    }
 }

@@ -2,6 +2,7 @@
 using MobyLabWebProgramming.Core.DataTransferObjects;
 using MobyLabWebProgramming.Core.Entities;
 using MobyLabWebProgramming.Core.Errors;
+using MobyLabWebProgramming.Core.Enums;
 using MobyLabWebProgramming.Core.Specifications;
 using MobyLabWebProgramming.Infrastructure.Database;
 using MobyLabWebProgramming.Infrastructure.Repositories.Interfaces;
@@ -15,8 +16,13 @@ public class EventService : IEventService
 
     public EventService(IRepository<WebAppDatabaseContext> repo) => _repo = repo;
 
-    public async Task<EventDTO> CreateEventAsync(EventCreateDTO dto, Guid userId)
+    public async Task<EventDTO> CreateEventAsync(EventCreateDTO dto, Guid userId, UserRoleEnum role)
     {
+        if (role == UserRoleEnum.User && dto.MaxParticipants > 10)
+        {
+            throw new ServerException(HttpStatusCode.BadRequest, "Userul standard poate crea evenimente cu maxim 10 participanți.");
+        }
+
         var movie = await _repo.GetAsync<Movie>(dto.MovieId);
         if (movie is null)
             throw new ServerException(HttpStatusCode.BadRequest, "Movie does not exist in local database.");
@@ -49,12 +55,17 @@ public class EventService : IEventService
             CreatedAt = newEvent.CreatedAt
         };
     }
-
-    public async Task<EventDTO> UpdateEventAsync(Guid eventId, EventCreateDTO dto, Guid userId)
+    
+    public async Task<EventDTO> UpdateEventAsync(Guid eventId, EventCreateDTO dto, Guid userId, UserRoleEnum role)
     {
         var ev = await _repo.GetAsync(new EventSpec(eventId, includeDetails: true));
         if (ev == null || ev.OrganizerId != userId)
             throw new ServerException(HttpStatusCode.Forbidden, "Access denied or event not found.");
+        
+        if (ev.UserEvents.Count == 0 && role == UserRoleEnum.User && dto.MaxParticipants > 10)
+        {
+            throw new ServerException(HttpStatusCode.BadRequest, "Userul standard poate seta maxim 10 participanți.");
+        }
 
         ev.Title = dto.Title;
         ev.Description = dto.Description;
@@ -83,6 +94,7 @@ public class EventService : IEventService
             CreatedAt = ev.CreatedAt
         };
     }
+
 
     public async Task DeleteEventAsync(Guid eventId, Guid userId)
     {
@@ -114,4 +126,11 @@ public class EventService : IEventService
 
     public async Task<EventDTO?> GetEventByIdAsync(Guid id) =>
         await _repo.GetAsync(new EventProjectionSpec(id));
+    
+    public async Task<List<EventDTO>> GetEventsByMovieTitleAsync(string title)
+    {
+        return await _repo.ListAsync(new EventByMovieTitleSpec(title));
+    }
+
+
 }

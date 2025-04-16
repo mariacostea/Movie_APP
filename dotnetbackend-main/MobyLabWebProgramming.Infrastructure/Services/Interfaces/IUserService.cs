@@ -58,4 +58,6 @@ public interface IUserService
 
     Task<User?> GetUserByEmail(string email, CancellationToken cancellationToken = default);
     
+    Task<RequestResponse> UpgradeUserToPremium(Guid userId);
+    
 }

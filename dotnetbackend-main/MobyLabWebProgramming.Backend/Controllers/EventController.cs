@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MobyLabWebProgramming.Core.DataTransferObjects;
+using MobyLabWebProgramming.Core.Enums;
 using MobyLabWebProgramming.Core.Responses;
 using MobyLabWebProgramming.Infrastructure.Services.Interfaces;
 using System.Security.Claims;
@@ -14,21 +15,30 @@ public class EventController(IEventService eventService) : ControllerBase
     private Guid GetLoggedInUserId() =>
         Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
+    private UserRoleEnum GetLoggedInUserRole() =>
+        Enum.Parse<UserRoleEnum>(User.FindFirst(ClaimTypes.Role)!.Value);
+
     [HttpPost("create")]
     [Authorize]
     public async Task<ActionResult<ServiceResponse<EventDTO>>> Create([FromBody] EventCreateDTO dto)
     {
-        var userId = GetLoggedInUserId();
-        var result = await eventService.CreateEventAsync(dto, userId);
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var roleString = User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+        var role = Enum.Parse<UserRoleEnum>(roleString, ignoreCase: true);
+
+        var result = await eventService.CreateEventAsync(dto, userId, role);
         return Ok(ServiceResponse.ForSuccess(result));
     }
+
 
     [HttpPut("update/{eventId}")]
     [Authorize]
     public async Task<ActionResult<ServiceResponse<EventDTO>>> Update(Guid eventId, [FromBody] EventCreateDTO dto)
     {
         var userId = GetLoggedInUserId();
-        var result = await eventService.UpdateEventAsync(eventId, dto, userId);
+        var role = GetLoggedInUserRole();
+
+        var result = await eventService.UpdateEventAsync(eventId, dto, userId, role);
         return Ok(ServiceResponse.ForSuccess(result));
     }
 
@@ -73,13 +83,14 @@ public class EventController(IEventService eventService) : ControllerBase
         return Ok(ServiceResponse.ForSuccess(result));
     }
 
-    [HttpGet("by-movie")]
+    [HttpGet("by-movie-title")]
     [AllowAnonymous]
-    public async Task<ActionResult<ServiceResponse<List<EventDTO>>>> ByMovie([FromQuery] Guid movieId)
+    public async Task<ActionResult<ServiceResponse<List<EventDTO>>>> ByMovieTitle([FromQuery] string title)
     {
-        var result = await eventService.GetEventsByMovieIdAsync(movieId);
+        var result = await eventService.GetEventsByMovieTitleAsync(title);
         return Ok(ServiceResponse.ForSuccess(result));
     }
+
 
     [HttpGet("by-id")]
     [AllowAnonymous]
