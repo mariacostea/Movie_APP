@@ -19,4 +19,5 @@ public enum ErrorCodes
     CannotDelete,
     MailSendFailed,
     EmailNotConfirmed,
+    InvalidValue,
 }

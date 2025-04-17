@@ -6,8 +6,8 @@ using MobyLabWebProgramming.Infrastructure.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using MobyLabWebProgramming.Infrastructure.Authorization;
 using MobyLabWebProgramming.Core.Enums;
-using System.Net; // Pentru HttpStatusCode
-using MobyLabWebProgramming.Core.Errors; // Pentru ErrorMessage
+using System.Net;
+using MobyLabWebProgramming.Core.Errors;
 
 namespace MobyLabWebProgramming.Backend.Controllers;
 
@@ -41,17 +41,36 @@ public class AuthorizationController(IUserService userService, ILoginService log
 
     [HttpPost]
     [AllowAnonymous]
-    public async Task<ActionResult<RequestResponse>> Login([FromBody] LoginDTO login)
+    public async Task<ActionResult<RequestResponse<LoginResponseDTO>>> Login([FromBody] LoginDTO login)
     {
         var user = await userService.GetUserByEmail(login.Email);
+
         if (user == null)
-            return ErrorMessageResult(new ErrorMessage(HttpStatusCode.NotFound, "Emailul introdus nu există."));
+        {
+            return ErrorMessageResult<LoginResponseDTO>(new ErrorMessage(
+                HttpStatusCode.NotFound,
+                "Emailul introdus nu există.",
+                ErrorCodes.UserAlreadyExists
+            ));
+        }
 
         if (!PasswordUtils.VerifyPassword(login.Password, user.Password))
-            return ErrorMessageResult(new ErrorMessage(HttpStatusCode.Unauthorized, "Parola introdusă este greșită."));
+        {
+            return ErrorMessageResult<LoginResponseDTO>(new ErrorMessage(
+                HttpStatusCode.Unauthorized,
+                "Parola introdusă este greșită.",
+                ErrorCodes.WrongPassword
+            ));
+        }
 
         if (!user.EmailConfirmed)
-            return ErrorMessageResult(new ErrorMessage(HttpStatusCode.Unauthorized, "Confirmă adresa de email."));
+        {
+            return ErrorMessageResult<LoginResponseDTO>(new ErrorMessage(
+                HttpStatusCode.Unauthorized,
+                "Confirmă adresa de email.",
+                ErrorCodes.EmailNotConfirmed
+            ));
+        }
 
         var userDTO = new UserDTO
         {
@@ -63,7 +82,12 @@ public class AuthorizationController(IUserService userService, ILoginService log
 
         var token = _loginService.GetToken(userDTO, DateTime.UtcNow, TimeSpan.FromDays(7));
 
-        return Ok(RequestResponse.Success(token));
+        var response = new LoginResponseDTO
+        {
+            User = userDTO,
+            Token = token
+        };
 
+        return Ok(RequestResponse<LoginResponseDTO>.Success(response));
     }
 }

@@ -132,5 +132,11 @@ public class EventService : IEventService
         return await _repo.ListAsync(new EventByMovieTitleSpec(title));
     }
 
+    public async Task<Movie?> GetMovieById(Guid movieId)
+    {
+        var spec = new MovieByIdSpec(movieId);
+        return await _repo.GetAsync(spec);
+    }
+
 
 }

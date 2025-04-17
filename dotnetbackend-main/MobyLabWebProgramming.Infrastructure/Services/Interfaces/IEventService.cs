@@ -1,5 +1,7 @@
 ﻿using MobyLabWebProgramming.Core.DataTransferObjects;
-using MobyLabWebProgramming.Core.Enums;
+using MobyLabWebProgramming.Core.Enums; 
+using MobyLabWebProgramming.Core.Entities;
+
 
 namespace MobyLabWebProgramming.Infrastructure.Services.Interfaces;
 
@@ -13,6 +15,8 @@ public interface IEventService
     Task<List<EventDTO>> GetEventsByFullDateTimeAsync(DateTime dateTime);
     Task<List<EventDTO>> GetEventsByMonthAsync(int year, int month);
     Task<List<EventDTO>> GetEventsByMovieTitleAsync(string title);
-
+    
+    Task<Movie?> GetMovieById(Guid movieId);
+    
     Task<EventDTO?> GetEventByIdAsync(Guid id);
 }

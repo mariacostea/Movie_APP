@@ -2,12 +2,12 @@
 using MobyLabWebProgramming.Core.Constants;
 using MobyLabWebProgramming.Core.DataTransferObjects;
 using MobyLabWebProgramming.Core.Entities;
-using MobyLabWebProgramming.Core.Enums;
 using MobyLabWebProgramming.Core.Errors;
 using MobyLabWebProgramming.Core.Specifications;
 using MobyLabWebProgramming.Infrastructure.Database;
 using MobyLabWebProgramming.Infrastructure.Repositories.Interfaces;
 using MobyLabWebProgramming.Infrastructure.Services.Interfaces;
+
 namespace MobyLabWebProgramming.Infrastructure.Services.Implementations;
 
 public class ReviewService : IReviewService
@@ -27,7 +27,6 @@ public class ReviewService : IReviewService
         if (hasWatched is null)
             throw new ServerException(HttpStatusCode.BadRequest, "You must watch the movie before leaving a review.");
 
-        
         var review = new Review
         {
             UserId = userId,
@@ -37,7 +36,7 @@ public class ReviewService : IReviewService
         };
 
         await _repo.AddAsync(review);
-        
+
         var allReviewsSpec = new ReviewSpec(dto.MovieId);
         var allReviews = await _repo.ListAsync(allReviewsSpec);
 
@@ -62,7 +61,7 @@ public class ReviewService : IReviewService
         review.Rating = dto.Rating;
 
         await _repo.UpdateAsync(review);
-        
+
         var allReviewsSpec = new ReviewSpec(dto.MovieId);
         var allReviews = await _repo.ListAsync(allReviewsSpec);
         var average = allReviews.Average(r => r.Rating);
@@ -83,7 +82,7 @@ public class ReviewService : IReviewService
             throw new ServerException(HttpStatusCode.NotFound, "Review not found or you're not authorized to delete it.");
 
         await _repo.DeleteAsync<Review>(reviewId);
-        
+
         var allReviewsSpec = new ReviewSpec(review.MovieId);
         var allReviews = await _repo.ListAsync(allReviewsSpec);
 
@@ -95,4 +94,23 @@ public class ReviewService : IReviewService
         }
     }
 
+    public async Task<List<ReviewDTO>> GetReviewsByMovieTitleAndYearAsync(string title, int year)
+    {
+        var movieSpec = new MovieByTitleAndYearSpec(title, year);
+        var movie = await _repo.GetAsync(movieSpec);
+
+        if (movie == null)
+        {
+            throw new ServerException(
+                HttpStatusCode.NotFound,
+                "Filmul specificat nu a fost găsit.",
+                ErrorCodes.EntityNotFound
+            );
+        }
+
+        var reviewSpec = new ReviewProjectionSpec(movie.Id);
+        var reviews = await _repo.ListAsync(reviewSpec);
+
+        return reviews;
+    }
 }

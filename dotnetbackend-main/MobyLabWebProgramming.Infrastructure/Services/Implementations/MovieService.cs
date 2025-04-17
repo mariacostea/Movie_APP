@@ -82,13 +82,12 @@ public class MovieService : IMovieService
         return new PagedResponse<MovieDetailsDTO>(page, pageSize, totalCount, movies);
     }
 
-    public async Task<MovieDetailsDTO?> GetMovieByTitleAsync(string title)
+    public async Task<MovieDetailsDTO?> GetMovieByTitleAsync(string title, int year)
     {
-        var spec = new MovieProjectionSpec(title);
+        var spec = new MovieProjectionByTitleAndYearSpec(title, year);
         return await _movieRepo.GetAsync(spec);
     }
-
-
+    
     public async Task<PagedResponse<MovieDetailsDTO>> GetMoviesByGenreAsync(string genre, int page, int pageSize)
     {
         var spec = new MovieProjectionSpec(genre: genre, page: page, pageSize: pageSize);

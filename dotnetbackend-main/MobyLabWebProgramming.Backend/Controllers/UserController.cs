@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MobyLabWebProgramming.Core.DataTransferObjects;
 using MobyLabWebProgramming.Core.Requests;
 using MobyLabWebProgramming.Core.Responses;
+using MobyLabWebProgramming.Core.Errors;
 using MobyLabWebProgramming.Infrastructure.Authorization;
 using MobyLabWebProgramming.Infrastructure.Services.Interfaces;
 
@@ -104,10 +106,16 @@ public class UserController(IUserService userService) : AuthorizedController(use
             return ErrorMessageResult(currentUser.Error);
 
         if (code != "PREMIUM2025")
-            return BadRequest("Codul introdus este invalid!");
-        
-        return await UserService.UpgradeUserToPremium(currentUser.Result!.Id);
+        {
+            return BadRequest(RequestResponse.FromError(new ErrorMessage(
+                HttpStatusCode.BadRequest,
+                "Codul introdus este invalid!",
+                ErrorCodes.CannotUpdate)));
+        }
 
+        var result = await UserService.UpgradeUserToPremium(currentUser.Result!.Id);
+        return result.ErrorMessage != null ? ErrorMessageResult(result.ErrorMessage) : Ok(result);
     }
+
 
 }

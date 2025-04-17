@@ -101,7 +101,7 @@ public class TmdbImportWorker(
 
         _currentPage += pagesToFetchPerCycle;
 
-        await Task.Delay(TimeSpan.FromMinutes(60), stoppingToken);
+        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
     }
 }
 
